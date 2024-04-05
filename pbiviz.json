@@ -1,18 +1,18 @@
 {
     "visual": {
-        "name": "Simple Waterfall",
-        "displayName": "Simple Waterfall",
-        "guid": "SimpleWaterfall",
+        "name": "Simple Waterfall dataXbi",
+        "displayName": "Simple Waterfall dataXbi",
+        "guid": "SimpleWaterfallDataxbi",
         "visualClassName": "Visual",
-        "version": "2.0.10.4",
+        "version": "1.0.0.0",
         "description": "A simple waterfall allowing users to create multi step waterfall",
-        "supportUrl": "https://nishantjain.co.uk/simple-waterfall-support/",
+        "supportUrl": "www.dataxbi.com",
         "gitHubUrl": ""
     },
-    "apiVersion": "4.0.0",
+    "apiVersion": "5.3.0",
     "author": {
-        "name": "Nishant Jain",
-        "email": "nishant@datanomy.uk"
+        "name": "dataXbi",
+        "email": "info@dataxbi.com"
     },
     "assets": {
         "icon": "assets/icon-visual.png"

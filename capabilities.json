@@ -19,7 +19,18 @@
                     "integer": true
                 }
             ]
-        }
+        },
+        {
+            "displayName": "Labels X Axis",
+            "name": "xaxislabels",
+            "kind": "Measure",
+            "requiredTypes": [
+                
+                {
+                    "numeric": true
+                }
+            ]
+          } 
     ],
     "drilldown": {
         "roles": [
@@ -33,14 +44,16 @@
     "tooltips": {
         "supportedTypes": {
             "default": true,
-            "canvas": true
+            "canvas": false
         },
         "roles": [
             "tooltips"
         ]
     },
     "dataViewMappings": [{
-
+        "conditions": [
+            { "xaxislabels": { "max": 2 } }
+        ],        
         "matrix": {
             "rows": {
                 "for": {
@@ -51,6 +64,11 @@
                 "select": [{
                     "for": {
                         "in": "measure"
+                    }
+                },
+                {
+                    "for": {
+                        "in": "xaxislabels"
                     }
                 }]
             }
@@ -857,5 +875,6 @@
                 }
             }
         }
-    }
+    },
+    "privileges": []
 }

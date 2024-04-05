@@ -25,7 +25,6 @@
 */
 "use strict";
 //import "@babel/polyfill";
-import "core-js/stable";
 import "regenerator-runtime/runtime";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
@@ -62,6 +61,7 @@ import { AxisScale, AxisDomain } from "d3";
 
 interface BarChartDataPoint {
     value: PrimitiveValue;
+    xaxislabels: PrimitiveValue;
     numberFormat: string;
     formattedValue: string;
     originalFormattedValue: string;
@@ -157,6 +157,7 @@ export class Visual implements IVisual {
         this.width = options.viewport.width;
         this.height = options.viewport.height - this.legendHeight;
         this.xAxisPosition = 0;
+        
         if (dataView.matrix.rows.levels.length != 1){
             this.visualSettings.chartOrientation.limitBreakdown=false;
         }
@@ -199,11 +200,11 @@ export class Visual implements IVisual {
             } else {
                 
             }*/
-            this.barChartData = this.getDataDrillableWaterfall(options)[allData.length - 1];
-            
-
+            this.barChartData = this.getDataDrillableWaterfall(options)[allData.length - 1]
 
         }
+
+
         this.createWaterfallGraph(options, allData);                
 
         //Certification requirement to use rendering API//
@@ -1291,6 +1292,21 @@ export class Visual implements IVisual {
         var allMeasureValues = [];
         // find all values and aggregate them in an array of array with each child in an array of a measure
         allMeasureValues = this.findLowestLevels();
+
+        // Lista de indices correspondientes a las medidas incluidas en "X Axis Labels"
+        var indexesXAxisLabels = [];
+        // Elimina del allMeasureValues las medidas que estén en "X Axis Labels"
+        for(var i=0; i < dataView.matrix.valueSources.length; i++) {
+            if (dataView.matrix.valueSources[i].roles["xaxislabels"] === true) {
+                indexesXAxisLabels.push(i);
+            }
+        }
+
+        // Se guardan todos los valores de todas las medidas juntas
+        var allMeasureValuesOrg = allMeasureValues;
+        // Se filtran los valores de las medidas que no son las del eje X
+        allMeasureValues = allMeasureValues.filter((e, i) => !indexesXAxisLabels.includes(i));
+
         var sortOrderPrecision = Math.pow(10, allMeasureValues.length * allMeasureValues[0].length.toString().length);
         var sortOrderIndex = 1;
         // calculate the difference between each measure and add them to an array as the step bars and then add the pillar bars [visualData]
@@ -1318,6 +1334,17 @@ export class Visual implements IVisual {
                         var category: string = dataView.matrix.valueSources[indexMeasures].displayName + allMeasureValues[indexMeasures][nodeItems].category.toString();
                         var selectionId = allMeasureValues[indexMeasures][nodeItems].selectionId;
                         data2Category = this.getDataForCategory(valueDifference, dataView.matrix.valueSources[indexMeasures].format, displayName, category, 0, selectionId, sortOrderIndex + ((nodeItems + 1) / sortOrderPrecision), 1, toolTipDisplayValue1, toolTipDisplayValue2, Measure1Value, Measure2Value);
+
+                        // Guardando los valores de las medidas indicadas en "X Axis Labels"
+                        var xAxisLabels = [];
+                        for (const index of indexesXAxisLabels) {
+                            const axisLabel = allMeasureValuesOrg[index][nodeItems];
+                            const format = dataView.matrix.valueSources[index].format;
+                            const formatedValue = this.formatValueforvalues(axisLabel.value,format);
+                            xAxisLabels.push(formatedValue)
+                        }
+                        data2Category["xAxisLabels"] = xAxisLabels;        
+                        
                         visualData.push(data2Category);
                     }
                     
@@ -1328,6 +1355,46 @@ export class Visual implements IVisual {
             Measure1Value = totalValueofMeasure;
             Measure2Value = null;                        
             dataPillar = this.getDataForCategory(totalValueofMeasure, dataView.matrix.valueSources[indexMeasures].format, dataView.matrix.valueSources[indexMeasures].displayName, dataView.matrix.valueSources[indexMeasures].displayName, 1, null, sortOrderIndex - 1, 1, toolTipDisplayValue1, toolTipDisplayValue2, Measure1Value, Measure2Value);                        
+
+            // Si es el primer pilar, se guardan los nombres de las medidas indicadas en "X Axis Labels"
+            if (indexMeasures == 0) {
+                var xAxisLabels = [];
+                for (const index of indexesXAxisLabels) {
+                    const labelName = dataView.matrix.valueSources[index].displayName;
+                    xAxisLabels.push(labelName)
+                }
+                dataPillar["xAxisLabels"] = xAxisLabels;            
+            } else {
+                // Si es el último pilar (solo habrá 2 pilares), se calcula el "valor total" de las medidas indicada en "X Axis Labels"
+                // Se asume que habrá 2 medidas como máximo y donde el total se calcula de manera diferente:
+                // 1)  Para la primera medida del eje x hay que utilizar una fórmula que depende de las otras medidas, las que NO se utilizan para el eje X
+                //     (suma total  medida 2 - suma total medida 1) / suma total medida 1
+                // 2) Para la seguna medida del eje X simplemente se suman todos los valores de esta medida
+                var xAxisLabels = [];
+                var cnt = 0;
+                for (const index of indexesXAxisLabels) {
+                    var totalValue = 0;
+                    // Para la primera medida el cálculo es diferente, como se indicó antes
+                    if (cnt == 0) {
+                        if (allMeasureValues.length >= 2) {
+                            const firstMeasureTotalSum = allMeasureValues[0].reduce((a, v) => a + v.value, 0);
+                            const secondMeasureTotalSum = allMeasureValues[1].reduce((a, v) => a + v.value, 0);
+                            totalValue = (secondMeasureTotalSum - firstMeasureTotalSum) / firstMeasureTotalSum;
+                        }
+                    } else {
+                        const values = allMeasureValuesOrg[index];
+                        totalValue =  values.reduce((a, v) => a + v.value, 0);    
+                    }
+
+                    const format = dataView.matrix.valueSources[index].format;
+                    const formatedValue = this.formatValueforvalues(totalValue,format);
+                    xAxisLabels.push(formatedValue);
+                    cnt++;
+                }
+                dataPillar["xAxisLabels"] = xAxisLabels;            
+            }
+
+        
             sortOrderIndex = sortOrderIndex + 2;
             visualData.push(dataPillar);
         }
@@ -1387,7 +1454,6 @@ export class Visual implements IVisual {
 
     private getDataStaticCategoryWaterfall(options: VisualUpdateOptions) {
         let dataView: DataView = options.dataViews[0];
-
         var visualData = [];
         var hasPillar = false;
         //*******************************************************************
@@ -1929,7 +1995,20 @@ export class Visual implements IVisual {
                 .attr('transform', `translate(${(xBaseScale.bandwidth() + (xBaseScale.step() * xBaseScale.padding() * 1.5)) + myWidth * (index - 1)},${myAxisParentHeight})`)
                 .selectAll('path').style('fill', 'none').style('stroke', this.visualSettings.yAxisFormatting.gridLineColor);
         }
-        var xAxislabels = myxAxisParent.selectAll(".tick text").data(currData).text(d => d.displayName);
+
+        var xAxislabelsSel = myxAxisParent.selectAll(".tick text");
+        var xAxislabels = xAxislabelsSel.data(currData).text(d => d.displayName);
+
+        // Agregando más filas al eje X con las etiquetas que se hayan definido en "X Axis Labels"
+        const maxRows = 2; // Hasta 2 filas adicionales de etiquetas
+        var dy = 4.00; // Posición vertical de la primera etiqueta (segunda filadel eje X) en unidades em
+        var dyStep = 2.25;  // Incremento de la posicín para las siguientes filas
+        for(var i =0; i < maxRows; i++) {
+            // Para cada fila de etiqueta se clona lo que ya se dibujó con d3 en el eje X 
+            xAxislabelsSel.clone().data(currData).text(d => { if (d.xAxisLabels) return d.xAxisLabels[i] }).attr("dy", dy + "em");
+            dy+= dyStep;
+        }
+
         if (this.visualType == "drillable" || this.visualType == "staticCategory" || this.visualType == "drillableCategory") {
             xAxislabels.on('click', (d) => {
                 // Allow selection only if the visual is rendered in a view that supports interactivity (e.g. Report)                

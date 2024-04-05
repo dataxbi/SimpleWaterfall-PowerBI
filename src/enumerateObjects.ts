@@ -11,6 +11,7 @@ import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
 import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
 interface barChartDataPoint {
     value: PrimitiveValue;
+    xaxislabels: PrimitiveValue;
     numberFormat: string;
     formattedValue: string;
     originalFormattedValue: string;
