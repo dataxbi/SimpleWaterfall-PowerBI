@@ -1340,8 +1340,10 @@ export class Visual implements IVisual {
                         for (const index of indexesXAxisLabels) {
                             const axisLabel = allMeasureValuesOrg[index][nodeItems];
                             const format = dataView.matrix.valueSources[index].format;
-                            const formatedValue = this.formatValueforvalues(axisLabel.value,format);
-                            xAxisLabels.push(formatedValue)
+                            var formattedValue = this.formatValueforvalues(axisLabel.value,format);
+                            // Para evitar que se vea (Blank). Es una solicón un poco fea, pero funciona.
+                            formattedValue = formattedValue.replace('(Blank)','');
+                            xAxisLabels.push(formattedValue)
                         }
                         data2Category["xAxisLabels"] = xAxisLabels;        
                         
@@ -1387,8 +1389,8 @@ export class Visual implements IVisual {
                     }
 
                     const format = dataView.matrix.valueSources[index].format;
-                    const formatedValue = this.formatValueforvalues(totalValue,format);
-                    xAxisLabels.push(formatedValue);
+                    var formattedValue = this.formatValueforvalues(totalValue,format);
+                    xAxisLabels.push(formattedValue);
                     cnt++;
                 }
                 dataPillar["xAxisLabels"] = xAxisLabels;            
@@ -1999,11 +2001,13 @@ export class Visual implements IVisual {
         var xAxislabelsSel = myxAxisParent.selectAll(".tick text");
         var xAxislabels = xAxislabelsSel.data(currData).text(d => d.displayName);
 
+        console.log("currData",currData);
+
         // Agregando más filas al eje X con las etiquetas que se hayan definido en "X Axis Labels"
         const maxRows = 2; // Hasta 2 filas adicionales de etiquetas
         var dy = 4.00; // Posición vertical de la primera etiqueta (segunda filadel eje X) en unidades em
         var dyStep = 2.25;  // Incremento de la posicín para las siguientes filas
-        for(var i =0; i < maxRows; i++) {
+        for(var i = 0; i < maxRows; i++) {
             // Para cada fila de etiqueta se clona lo que ya se dibujó con d3 en el eje X 
             xAxislabelsSel.clone().data(currData).text(d => { if (d.xAxisLabels) return d.xAxisLabels[i] }).attr("dy", dy + "em");
             dy+= dyStep;

@@ -4,7 +4,7 @@
         "displayName": "Simple Waterfall dataXbi",
         "guid": "SimpleWaterfallDataxbi",
         "visualClassName": "Visual",
-        "version": "1.0.0.0",
+        "version": "1.0.0.1",
         "description": "A simple waterfall allowing users to create multi step waterfall",
         "supportUrl": "www.dataxbi.com",
         "gitHubUrl": ""
